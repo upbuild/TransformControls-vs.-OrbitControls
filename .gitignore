@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+    <title>Proof of Concept by Stefan Stoehr</title>
+
+    <meta charset="utf-8">
+
+    <style>
+        body {
+            background-color: #000000;
+        }
+    </style>
+
+</head>
+<body>
+
+    <p>
+        <a href="http://stoehrbild.wordpress.com/2014/07/25/cads-up-exist"><img src="cadsup.png" width="121" height="44" border="0" align="right"></a>
+        <a href="http://www.b-tu.de/b-tu/"><img src="BTU.jpg" width="150" height="26" border="0" align="center"></a>
+    </p>
+
+    <script src="three.min.js"></script>
+    <script src="ColladaLoader.js"></script>
+    <script src="Detector.js"></script>
+    <script src="stats.min.js"></script>
+    <script src="OrbitControls.js"></script>
+    <script src="TransformControls.js"></script>
+
+    <script>
+
+    var camera, scene, renderer, control, controls, objects;
+    var dae;
+    var SCREEN_HEIGHT = window.innerHeight;
+    var SCREEN_WIDTH = window.innerWidth;
+
+// Collada Loader//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    var loader = new THREE.ColladaLoader();
+    loader.options.convertUpAxis = true;
+    loader.load( "04_castle.dae", function ( collada ) {
+
+        dae = collada.scene;
+
+        dae.scale.x = dae.scale.y = dae.scale.z = 0.001;
+        dae.updateMatrix();
+
+        init();
+        render();
+
+    } );
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    function animate() {
+
+        requestAnimationFrame(animate);
+        controls.update();
+   }
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    function init() {
+
+//Render////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+        renderer = new THREE.WebGLRenderer();
+        renderer.sortObjects = false;
+        renderer.setSize( window.innerWidth, window.innerHeight );
+        document.body.appendChild( renderer.domElement );
+
+//Camera/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+        camera = new THREE.PerspectiveCamera( 60,  SCREEN_WIDTH / SCREEN_HEIGHT );
+        camera.position.z = 5;
+        camera.position.y = 2;
+        camera.position.x = 5;
+
+//OrbitControls//////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+        controls = new THREE.OrbitControls( camera );
+        controls.damping = 0.2;
+        controls.addEventListener( 'change', render );
+
+        scene = new THREE.Scene();
+
+//Add Collada///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+        scene.add( dae );
+
+//Ground/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+        var size = 14, step = 1;
+
+        var geometry = new THREE.Geometry();
+        var material = new THREE.LineBasicMaterial( { color: 0x303030 } );
+
+        for ( var i = - size; i <= size; i += step ) {
+
+            geometry.vertices.push( new THREE.Vector3( - size, - 0.04, i ) );
+            geometry.vertices.push( new THREE.Vector3(   size, - 0.04, i ) );
+
+            geometry.vertices.push( new THREE.Vector3( i, - 0.04, - size ) );
+            geometry.vertices.push( new THREE.Vector3( i, - 0.04,   size ) );
+
+        }
+
+        var line = new THREE.Line( geometry, material, THREE.LinePieces );
+        scene.add( line );
+
+//LIGHTS///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+        hemiLight = new THREE.HemisphereLight( 0xffffff, 0xffffff, 0.6 );
+        hemiLight.color.setHSL( 0.6, 1, 0.6 );
+        hemiLight.groundColor.setHSL( 0.095, 1, 0.75 );
+        hemiLight.position.set( 0, 500, 0 );
+        scene.add( hemiLight );
+
+        dirLight = new THREE.DirectionalLight( 0xffffff, 1 );
+        dirLight.color.setHSL( 0.1, 1, 0.95 );
+        dirLight.position.set( -1, 1.75, 1 );
+        dirLight.position.multiplyScalar( 50 );
+        scene.add( dirLight );
+
+//Transform////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+        control = new THREE.TransformControls( camera, renderer.domElement );
+        control.addEventListener( 'change', render );
+
+        control.attach( dae );
+        scene.add( control );
+
+        window.addEventListener( 'resize', onWindowResize, false );
+
+        window.addEventListener( 'keydown', function ( event ) {
+            //console.log(event.which);
+            switch ( event.keyCode ) {
+                case 81: // Q
+                    control.setSpace( control.space == "local" ? "world" : "local" );
+                    break;
+                case 87: // W
+                    control.setMode( "translate" );
+                    break;
+                case 69: // E
+                    control.setMode( "rotate" );
+                    break;
+                case 82: // R
+                    control.setMode( "scale" );
+                    break;
+                case 187:
+                case 107: // +,=,num+
+                    control.setSize( control.size + 0.1 );
+                    break;
+                case 189:
+                case 10: // -,_,num-
+                    control.setSize( Math.max(control.size - 0.1, 0.1 ) );
+                    break;
+            }
+        });
+    }
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    function onWindowResize() {
+
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize( window.innerWidth, window.innerHeight );
+
+        render();
+    }
+
+//Render///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    function render() {
+
+        renderer.render( scene, camera );
+        stats.update();
+        control.update();
+        controls.update();
+    }
+
+</script>
+
+</body>
+
+</html>
+
+https://github.com/upbuild/02_Experiment.git
